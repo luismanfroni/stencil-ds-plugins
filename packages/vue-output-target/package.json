@@ -52,8 +52,10 @@
     "testRegex": "(\\.(test|spec))\\.(ts?|tsx?|jsx?)$",
     "moduleFileExtensions": [
       "ts",
+      "tsx",
       "js",
-      "json"
+      "json",
+      "jsx"
     ],
     "testURL": "http://localhost"
   },
