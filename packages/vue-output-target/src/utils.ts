@@ -1,7 +1,7 @@
 import path from 'path';
 import { promisify } from 'util';
 import fs from 'fs';
-import { PackageJSON } from './types';
+import { DocummentedObject, PackageJSON } from './types';
 
 const readFile = promisify(fs.readFile);
 
@@ -93,6 +93,19 @@ export async function readPackageJson(rootDir: string) {
   return pkgData;
 }
 
+export function indentLines(lines: string[]): string[] {
+  return lines.map((text) => `${INDENTATION}${text}`);
+}
+
+export function getDocsComment(obj: DocummentedObject): string[] {
+  return obj?.docs?.text && [
+      '/**',
+      ` * ${obj.docs.text}`,
+      ' */'
+    ] || [];
+}
+
+const INDENTATION = '  ';
 const EXTENDED_PATH_REGEX = /^\\\\\?\\/;
 const NON_ASCII_REGEX = /[^\x00-\x80]+/;
 const SLASH_REGEX = /\\/g;
