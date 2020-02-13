@@ -2,6 +2,7 @@ import path from 'path';
 import { promisify } from 'util';
 import fs from 'fs';
 import { DocummentedObject, PackageJSON } from './types';
+import { ComponentCompilerProperty } from '@stencil/core/dist/declarations';
 
 const readFile = promisify(fs.readFile);
 
@@ -103,6 +104,11 @@ export function getDocsComment(obj: DocummentedObject): string[] {
       ` * ${obj.docs.text}`,
       ' */'
     ] || [];
+}
+
+export function getPropType(prop: ComponentCompilerProperty): string {
+  // tslint:disable-next-line: triple-equals
+  return (prop.type == 'unknown' && 'any') || prop.type;
 }
 
 const INDENTATION = '  ';

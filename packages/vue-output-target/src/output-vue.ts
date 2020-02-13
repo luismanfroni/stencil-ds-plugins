@@ -37,18 +37,18 @@ async function generateProxies(
     ),
   )}';\n`;
 
-  const registerCustomElements = `${APPLY_POLYFILLS}().then(() => ${REGISTER_CUSTOM_ELEMENTS}());`;
+  const registerCustomElements = `${APPLY_POLYFILLS}().then(() => ${REGISTER_CUSTOM_ELEMENTS}(window));`;
 
   const componentReferences: string[] = [...components.map(createComponentReference)];
   await Promise.all(
     components.map((component: ComponentCompilerMeta): Promise<void> => new Promise((resolve, reject) => {
       try {
-        const model = findModel(outputTarget.modelConfig, component.events);
+        const model = findModel(outputTarget.modelConfigs, component.events);
         const vueComponent = [
           '/* eslint-disable */',
           '/* tslint:disable */',
           '/* auto-generated vue components */',
-          `import { JSX } from '${outputTarget.componentCorePackage}';`,
+          `import '${outputTarget.componentCorePackage}';`,
           ...generateComponent(component, model)
         ].join(`\n`);
         const componentPath = getComponentPath(outputTarget.proxiesFile, component);

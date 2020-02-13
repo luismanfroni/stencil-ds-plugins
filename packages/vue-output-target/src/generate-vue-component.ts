@@ -1,5 +1,5 @@
 import { ComponentCompilerMeta } from '@stencil/core/internal';
-import { dashToPascalCase, indentLines } from './utils';
+import { dashToPascalCase, getPropType, indentLines } from './utils';
 import { ComponentCompilerEvent, ComponentCompilerMethod, ComponentCompilerProperty } from '@stencil/core/dist/declarations';
 
 const REF_NAME = 'childWebComponent';
@@ -9,25 +9,24 @@ export function generateComponent(component: ComponentCompilerMeta, models?: { e
   const componentName = dashToPascalCase(component.tagName);
   const model: string[] = models && defineModel(component, models) || [];
   const props: string[] = defineProps(component.properties.filter(prop => models && prop.name !== models.propName));
-  const lines: string[] =
-    [
-      'import { VNode } from "vue";',
-      `import { Vue, Component, Ref, ${!!props.length && 'Prop' || ''}, ${!!model.length && 'Model' || ''} } from 'vue-property-decorator';`,
-      '',
-      '@Component',
-      `export default class ${componentName} extends Vue {`,
-      ...indentLines([
-        ...model,
-        ...defineRef(componentName),
-        ...props,
-        ...defineMethods(component.methods),
-        ...defineEvents(component.events),
-        ...defineRender(component)
-      ]),
-      '};',
-      ''
-    ];
-  return lines;
+  return [
+    'import "reflect-metadata";',
+    'import { VNode } from "vue";',
+    `import { Vue, Component, Ref, ${!!props.length && 'Prop' || ''}, ${!!model.length && 'Model' || ''} } from 'vue-property-decorator';`,
+    '',
+    '@Component',
+    `export default class ${componentName} extends Vue {`,
+    ...indentLines([
+      ...model,
+      ...defineRef(componentName),
+      ...props,
+      ...defineMethods(component.methods),
+      ...defineEvents(component.events),
+      ...defineRender(component)
+    ]),
+    '};',
+    ''
+  ];
 }
 
 function defineEvents(events: ComponentCompilerEvent[]): string[] {
@@ -43,11 +42,9 @@ function defineModel(component: ComponentCompilerMeta, models: { eventName: stri
   const event: ComponentCompilerEvent | undefined = component.events.find(e => e.name === models.eventName);
   if (!prop || !event) return [];
 
-  const propType: string = (prop.type === 'unknown' && 'any') || prop.type;
-  const eventType: string | undefined = (propType === 'any' && undefined) || dashToPascalCase(propType);
-  const typeObject = eventType && `{ type: ${ eventType } }` || '';
+  const propType = getPropType(prop);
   return [
-    `@Model("${event.name}", ${typeObject}) readonly ${prop.name}!: ${propType}`
+    `@Model("${event.name}") readonly ${prop.name}: ${propType}`
   ];
 }
 
@@ -57,7 +54,7 @@ function defineRef(componentName: string): string[] {
 
 function defineRender(component: ComponentCompilerMeta): string[] {
   return [
-    'render (createElement): VNode {',
+    'render (createElement: any): VNode {',
     ...indentLines([
       `return createElement("${component.tagName}",`,
       ...indentLines([
@@ -70,7 +67,7 @@ function defineRender(component: ComponentCompilerMeta): string[] {
               return `${prop.name}: this.${prop.name},`;
             })
           ]),
-          '}',
+          '},',
           'nativeOn: {',
           ...indentLines([
             ...component.events.map(event => {
@@ -80,7 +77,7 @@ function defineRender(component: ComponentCompilerMeta): string[] {
           '}'
         ]),
         '},',
-        'this.$slots.default'
+        '[this.$slots.default]'
       ]),
       ');'
     ]),
@@ -90,11 +87,8 @@ function defineRender(component: ComponentCompilerMeta): string[] {
 
 function defineProps(properties: ComponentCompilerProperty[]): string[] {
   return properties.map(prop => {
-    // tslint:disable-next-line: triple-equals
-    const propType: string | undefined = (prop.type == 'unknown' && undefined) || (prop.type == 'any' && undefined) || prop.type;
-    const sanitizedType: string | undefined = propType && dashToPascalCase(propType);
-    const paramType = sanitizedType && `[${ sanitizedType }]` || '';
-    return `@Prop(${paramType}) readonly ${prop.name}: ${propType}`;
+    const propType = getPropType(prop);
+    return `@Prop() readonly ${prop.name}: ${propType}`;
   });
 }
 

@@ -4,8 +4,8 @@ export interface OutputTargetVue {
   proxiesFile: string;
   excludeComponents?: string[];
   loaderDir?: string;
-  modelConfig: {
-    [key: string]: string
+  modelConfigs: {
+    [eventName: string]: string
   };
 }
 export interface PackageJSON {
